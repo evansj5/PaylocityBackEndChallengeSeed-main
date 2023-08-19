@@ -1,4 +1,5 @@
 using Api.Data;
+using Api.Services;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IDependentService, DependentService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<BenefitsDbContext>();
@@ -38,7 +41,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors(allowLocalhost);
 
-app.UseHttpsRedirection();
+// disabled for ease of testing
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

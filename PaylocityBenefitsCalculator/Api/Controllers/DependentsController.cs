@@ -22,7 +22,24 @@ public class DependentsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<GetDependentDto>>> Get(int id)
     {
-        throw new NotImplementedException();
+        var dependent = _dependentService.Get(id);
+
+        if (dependent == null) 
+        {
+            return StatusCode((int)HttpStatusCode.NotFound, new ApiResponse<GetDependentDto>
+            {
+                Success = false,
+                Error = $"Dependent with id {id} not found"
+            });
+        }
+
+        var result = new ApiResponse<GetDependentDto>
+        {
+            Data = dependent,
+            Success = true
+        };
+
+        return StatusCode((int)HttpStatusCode.OK, result);
     }
 
     [SwaggerOperation(Summary = "Get all dependents")]

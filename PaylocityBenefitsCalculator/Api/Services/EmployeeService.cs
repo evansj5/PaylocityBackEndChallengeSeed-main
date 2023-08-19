@@ -36,6 +36,7 @@ namespace Api.Services
                 .Include(e => e.Dependents)
                 .Select(MapToDto).FirstOrDefault(e => e.Id == id);
 
+            // could be null, but lets handle in the controller
             return employee;
         }
 

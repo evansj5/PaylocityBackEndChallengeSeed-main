@@ -23,7 +23,24 @@ public class EmployeesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ApiResponse<GetEmployeeDto>>> Get(int id)
     {
-        throw new NotImplementedException();
+        var employee = _employeeService.Get(id);
+
+        if (employee == null) 
+        {
+            return StatusCode((int)HttpStatusCode.NotFound, new ApiResponse<GetEmployeeDto>
+            {
+                Success = false,
+                Error = $"Employee with id {id} not found"
+            });
+        }
+
+        var result = new ApiResponse<GetEmployeeDto>
+        {
+            Data = employee,
+            Success = true
+        };
+
+        return StatusCode((int)HttpStatusCode.OK, result);
     }
 
     [SwaggerOperation(Summary = "Get all employees")]

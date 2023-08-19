@@ -1,6 +1,7 @@
 using Api.Data;
 using Api.Dtos.Dependent;
 using Api.Dtos.Employee;
+using Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Services
@@ -8,6 +9,7 @@ namespace Api.Services
     public interface IEmployeeService
     {
         List<GetEmployeeDto> GetAll();
+        GetEmployeeDto Get(int id);
     }
 
     public class EmployeeService : IEmployeeService
@@ -23,24 +25,38 @@ namespace Api.Services
         {
             var employees = _context.Employees
                 .Include(e => e.Dependents)
-                .Select(e => new GetEmployeeDto
-                {
-                    Id = e.Id,
-                    FirstName = e.FirstName,
-                    LastName = e.LastName,
-                    Salary = e.Salary,
-                    DateOfBirth = e.DateOfBirth,
-                    Dependents = e.Dependents.Select(d => new GetDependentDto
-                    {
-                        Id = d.Id,
-                        FirstName = d.FirstName,
-                        LastName = d.LastName,
-                        Relationship = d.Relationship,
-                        DateOfBirth = d.DateOfBirth
-                    }).ToList()
-                }).ToList();
+                .Select(MapToDto).ToList();
 
             return employees;
+        }
+
+        public GetEmployeeDto Get(int id)
+        {
+            var employee = _context.Employees
+                .Include(e => e.Dependents)
+                .Select(MapToDto).FirstOrDefault(e => e.Id == id);
+
+            return employee;
+        }
+
+        private GetEmployeeDto MapToDto(Employee employee)
+        {
+            return new GetEmployeeDto
+            {
+                Id = employee.Id,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Salary = employee.Salary,
+                DateOfBirth = employee.DateOfBirth,
+                Dependents = employee.Dependents.Select(d => new GetDependentDto
+                {
+                    Id = d.Id,
+                    FirstName = d.FirstName,
+                    LastName = d.LastName,
+                    Relationship = d.Relationship,
+                    DateOfBirth = d.DateOfBirth
+                }).ToList()
+            };
         }
     }
 }

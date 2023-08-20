@@ -1,15 +1,20 @@
 using Api.Data;
 using Api.Services;
+using Api.Validation;
 using Microsoft.OpenApi.Models;
-using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// services
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IDependentService, DependentService>();
+
+// validators
+builder.Services.AddScoped<IEmployeeValidator, EmployeeValidator>();
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

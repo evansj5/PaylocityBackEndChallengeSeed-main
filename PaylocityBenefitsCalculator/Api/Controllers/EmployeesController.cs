@@ -3,6 +3,7 @@ using Api.Dtos.Dependent;
 using Api.Dtos.Employee;
 using Api.Models;
 using Api.Services;
+using Api.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -79,5 +80,32 @@ public class EmployeesController : ControllerBase
         };
 
         return StatusCode((int)HttpStatusCode.OK, result);
+    }
+
+    [SwaggerOperation(Summary = "Create employee")]
+    [HttpPost("")]
+    public async Task<ActionResult<ApiResponse<GetEmployeeDto>>> Create(CreateEmployeeDto employeeRequest)
+    {
+        GetEmployeeDto employeeResponse;
+        try 
+        {
+            employeeResponse = _employeeService.Create(employeeRequest);
+        }
+        catch (ValidationException e)
+        {
+            return StatusCode((int)HttpStatusCode.BadRequest, new ApiResponse<GetEmployeeDto>
+            {
+                Success = false,
+                Error = e.Message
+            });
+        }
+
+        var result = new ApiResponse<GetEmployeeDto>
+        {
+            Data = employeeResponse,
+            Success = true
+        };
+
+        return StatusCode((int)HttpStatusCode.Created, result);
     }
 }

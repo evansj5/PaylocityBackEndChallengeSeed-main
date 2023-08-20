@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Api.Dtos.Dependent;
 using Api.Dtos.Employee;
 using Api.Models;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace ApiTests.IntegrationTests;
@@ -103,7 +105,7 @@ public class EmployeeIntegrationTests : IntegrationTest
     }
 
     [Fact]
-    //task: make test pass
+    //task: make test pass - check
     public async Task WhenAskedForAnEmployee_ShouldReturnCorrectEmployee()
     {
         var response = await HttpClient.GetAsync("/api/v1/employees/1");
@@ -167,11 +169,161 @@ public class EmployeeIntegrationTests : IntegrationTest
     }
     
     [Fact]
-    //task: make test pass
+    //task: make test pass - check
     public async Task WhenAskedForANonexistentEmployee_ShouldReturn404()
     {
         var response = await HttpClient.GetAsync($"/api/v1/employees/{int.MinValue}");
         await response.ShouldReturn(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithValidData_ShouldReturnCreatedEmployee()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            FirstName = "Test",
+            LastName = "Employee",
+            Salary = 100000,
+            DateOfBirth = new DateTime(1990, 1, 1)
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+        var responseString = await response.Content.ReadAsStringAsync();
+        var responseObject = JsonConvert.DeserializeObject<ApiResponse<GetEmployeeDto>>(responseString);
+
+        var createdEmployee = new GetEmployeeDto
+        {
+            Id = responseObject.Data.Id,
+            FirstName = "Test",
+            LastName = "Employee",
+            Salary = 100000,
+            DateOfBirth = new DateTime(1990, 1, 1)
+        };
+
+        await response.ShouldReturn(HttpStatusCode.Created, createdEmployee);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithTooManySpousesAndPartners_ShouldReturn400()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            FirstName = "Test",
+            LastName = "Employee",
+            Salary = 100000,
+            DateOfBirth = new DateTime(1990, 1, 1),
+            Dependents = new List<CreateDependentDto>()
+            {
+                new ()
+                {
+                    FirstName = "Spouse",
+                    LastName = "1",
+                    Relationship = Relationship.Spouse,
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+                new ()
+                {
+                    FirstName = "DomesticPartner",
+                    LastName = "2",
+                    Relationship = Relationship.DomesticPartner,
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+            }
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+
+        await response.ShouldReturn(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithoutAFirstName_ShouldReturn400()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            LastName = "Employee",
+            Salary = 100000,
+            DateOfBirth = new DateTime(1990, 1, 1),
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+
+        await response.ShouldReturn(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithoutALastName_ShouldReturn400()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            FirstName = "Test",
+            Salary = 100000,
+            DateOfBirth = new DateTime(1990, 1, 1),
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+
+        await response.ShouldReturn(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithInvalidSalary_ShouldReturn400()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            FirstName = "Test",
+            LastName = "Employee",
+            Salary = -50,
+            DateOfBirth = new DateTime(1990, 1, 1),
+            Dependents = new List<CreateDependentDto>()
+            {
+                new ()
+                {
+                    FirstName = "Spouse",
+                    LastName = "1",
+                    Relationship = Relationship.Spouse,
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+                new ()
+                {
+                    FirstName = "DomesticPartner",
+                    LastName = "2",
+                    Relationship = Relationship.DomesticPartner,
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+            }
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+
+        await response.ShouldReturn(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task WhenCreatingAnEmployeeWithNoDoB_ShouldReturn400()
+    {
+        var employee = new CreateEmployeeDto
+        {
+            FirstName = "Test",
+            LastName = "Employee",
+            Salary = 10000,
+        };
+
+        var jsonContent = JsonConvert.SerializeObject(employee);
+        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+        var response = await HttpClient.PostAsync("/api/v1/employees", content);
+
+        await response.ShouldReturn(HttpStatusCode.BadRequest);
     }
 }
 

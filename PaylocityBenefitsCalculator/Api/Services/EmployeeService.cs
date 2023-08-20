@@ -2,6 +2,7 @@ using Api.Data;
 using Api.Dtos.Dependent;
 using Api.Dtos.Employee;
 using Api.Models;
+using Api.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -12,17 +13,20 @@ namespace Api.Services
         List<GetEmployeeDto> GetAll();
         GetEmployeeDto Get(int id);
         GetPaycheckDto GetPaycheck(int employeeId);
+        GetEmployeeDto Create(CreateEmployeeDto employee);
     }
 
     public class EmployeeService : IEmployeeService
     {
         private readonly BenefitsDbContext _context;
         private readonly IOptions<BenefitsCostSettings> _benefitsCostSettings;
+        private readonly IEmployeeValidator _employeeValidator;
 
-        public EmployeeService(BenefitsDbContext context, IOptions<BenefitsCostSettings> benefitsCostSettings)
+        public EmployeeService(BenefitsDbContext context, IOptions<BenefitsCostSettings> benefitsCostSettings, IEmployeeValidator employeeValidator)
         {
             _context = context;
             _benefitsCostSettings = benefitsCostSettings;
+            _employeeValidator = employeeValidator;
         }
 
         public List<GetEmployeeDto> GetAll()
@@ -136,6 +140,40 @@ namespace Api.Services
         private decimal FloorToNearestCent(decimal value) 
         {
             return Math.Floor(value * 100) / 100;
+        }
+    
+        public GetEmployeeDto Create(CreateEmployeeDto employee)
+        {
+
+            var validationResult = _employeeValidator.Validate(employee);
+
+            if (!validationResult.IsValid)
+            {
+                throw new ValidationException(validationResult.ErrorMessage);
+            }
+            
+            var newEmployee = new Employee
+            {
+                Id = _context.Employees.Max(e => e.Id) + 1, // bit of a hack to get an auto-increment, generally the db would handle this
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Salary = employee.Salary,
+                DateOfBirth = employee.DateOfBirth,
+                Dependents = employee.Dependents.Select((d, index) => new Dependent
+                {
+                    Id = _context.Dependents.Max(d => d.Id) + 1 + index, // haaaack
+                    FirstName = d.FirstName,
+                    LastName = d.LastName,
+                    Relationship = d.Relationship,
+                    DateOfBirth = d.DateOfBirth
+                }).ToList()
+            };
+
+            _context.Employees.Add(newEmployee);
+            _context.Dependents.AddRange(newEmployee.Dependents);
+            _context.SaveChanges();
+
+            return Get(newEmployee.Id);
         }
     }
 }

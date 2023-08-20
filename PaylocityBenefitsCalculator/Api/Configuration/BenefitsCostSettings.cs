@@ -17,4 +17,6 @@ public class AgeBasedCostsSettings
 {
     public int AgeThreshold { get; set; }
     public decimal AdditionalMonthlyCost { get; set; }
+    public int DependentAgeThreshold { get; set; }
+    public decimal DependentAdditionalMonthlyCost { get; set; }
 }

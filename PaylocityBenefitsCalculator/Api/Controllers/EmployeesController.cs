@@ -56,4 +56,28 @@ public class EmployeesController : ControllerBase
 
         return StatusCode((int)HttpStatusCode.OK, result);
     }
+
+    [SwaggerOperation(Summary = "Get paycheck for employee")]
+    [HttpGet("{employeeId}/paycheck")]
+    public async Task<ActionResult<ApiResponse<GetPaycheckDto>>> GetPaycheck(int employeeId)
+    {
+        var paycheck = _employeeService.GetPaycheck(employeeId);
+
+        if (paycheck == null) 
+        {
+            return StatusCode((int)HttpStatusCode.NotFound, new ApiResponse<GetPaycheckDto>
+            {
+                Success = false,
+                Error = $"Employee with id {employeeId} not found"
+            });
+        }
+
+        var result = new ApiResponse<GetPaycheckDto>
+        {
+            Data = paycheck,
+            Success = true
+        };
+
+        return StatusCode((int)HttpStatusCode.OK, result);
+    }
 }

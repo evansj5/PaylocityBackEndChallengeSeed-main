@@ -78,7 +78,26 @@ public class EmployeeIntegrationTests : IntegrationTest
                         DateOfBirth = new DateTime(1974, 1, 2)
                     }
                 }
-            }
+            },
+                new () 
+                { 
+                    Id = 4, 
+                    FirstName = "Larry", 
+                    LastName = "Bird", 
+                    Salary = 1413211.12m, 
+                    DateOfBirth = new DateTime(1956, 12, 7),
+                    Dependents = new List<GetDependentDto>
+                    {
+                        new () 
+                        { 
+                            Id = 5, 
+                            FirstName = "Spouse", 
+                            LastName = "Bird", 
+                            DateOfBirth = new DateTime(1956, 1, 2), 
+                            Relationship = Relationship.Spouse 
+                        }
+                    }
+                }
         };
         await response.ShouldReturn(HttpStatusCode.OK, employees);
     }
@@ -97,6 +116,54 @@ public class EmployeeIntegrationTests : IntegrationTest
             DateOfBirth = new DateTime(1984, 12, 30)
         };
         await response.ShouldReturn(HttpStatusCode.OK, employee);
+    }
+
+    [Fact]
+    public async Task WhenAskedForAnEmployeePaycheck_ShouldCalculateCorrectly()
+    {
+        var response = await HttpClient.GetAsync("/api/v1/employees/2/paycheck");
+        var paycheck = new GetPaycheckDto
+        {
+            GrossPay = 3552.5m,
+            BaseBenefitsCosts = 461.53m,
+            DependentsBenefitsCosts = 830.76m,
+            SalaryBenefitsCosts = 71.05m,
+            AgeBasedBenefitsCosts = 0m,
+            NetPay = 2189.16m
+        };
+        await response.ShouldReturn(HttpStatusCode.OK, paycheck);
+    }
+
+    [Fact]
+    public async Task WhenAskedForAnEmployeePaycheckWithDependentOver50_ShouldCalculateCorrectly() 
+    {
+        var response = await HttpClient.GetAsync("/api/v1/employees/4/paycheck");
+        var paycheck = new GetPaycheckDto
+        {
+            GrossPay = 54354.27m,
+            BaseBenefitsCosts = 461.53m,
+            DependentsBenefitsCosts = 369.23m,
+            SalaryBenefitsCosts = 1087.08m,
+            AgeBasedBenefitsCosts = 92.3m,
+            NetPay = 52344.13m
+        };
+        await response.ShouldReturn(HttpStatusCode.OK, paycheck);
+    }
+
+    [Fact]
+    public async Task WhenAskedForAnEmployeePaycheckOver80000Salary_ShouldCalculateCorrectly()
+    {
+        var response = await HttpClient.GetAsync("/api/v1/employees/3/paycheck");
+        var paycheck = new GetPaycheckDto
+        {
+            GrossPay = 5508.12m,
+            BaseBenefitsCosts = 461.53m,
+            DependentsBenefitsCosts = 276.92m,
+            SalaryBenefitsCosts = 110.16m,
+            AgeBasedBenefitsCosts = 92.3m,
+            NetPay = 4567.21m
+        };
+        await response.ShouldReturn(HttpStatusCode.OK, paycheck);
     }
     
     [Fact]

@@ -53,6 +53,18 @@ namespace Api.Data
                     {
                         new Dependent { Id = 4, FirstName = "DP", LastName = "Jordan", EmployeeId = 3, DateOfBirth = new DateTime(1974, 1, 2), Relationship = Relationship.DomesticPartner }
                     }
+                },
+                new Employee 
+                { 
+                    Id = 4, 
+                    FirstName = "Larry", 
+                    LastName = "Bird", 
+                    Salary = 1413211.12m, 
+                    DateOfBirth = new DateTime(1956, 12, 7),
+                    Dependents = new List<Dependent>
+                    {
+                        new Dependent { Id = 5, FirstName = "Spouse", LastName = "Bird", EmployeeId = 3, DateOfBirth = new DateTime(1956, 1, 2), Relationship = Relationship.Spouse }
+                    }
                 }
             };
 

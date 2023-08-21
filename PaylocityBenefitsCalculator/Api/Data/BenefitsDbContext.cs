@@ -19,6 +19,9 @@ namespace Api.Data
     {
         public static void Seed(BenefitsDbContext context)
         {
+            context.Dependents.RemoveRange(context.Dependents);
+            context.Employees.RemoveRange(context.Employees);
+            
             Employee[] employees = {
                 new Employee 
                 { 
@@ -63,7 +66,19 @@ namespace Api.Data
                     DateOfBirth = new DateTime(1956, 12, 7),
                     Dependents = new List<Dependent>
                     {
-                        new Dependent { Id = 5, FirstName = "Spouse", LastName = "Bird", EmployeeId = 3, DateOfBirth = new DateTime(1956, 1, 2), Relationship = Relationship.Spouse }
+                        new Dependent { Id = 5, FirstName = "Spouse", LastName = "Bird", EmployeeId = 4, DateOfBirth = new DateTime(1956, 1, 2), Relationship = Relationship.Spouse }
+                    }
+                },
+                new Employee 
+                { 
+                    Id = 5, 
+                    FirstName = "Kevin", 
+                    LastName = "Durant", 
+                    Salary = 1413211.12m, 
+                    DateOfBirth = new DateTime(1988, 9, 29),
+                    Dependents = new List<Dependent>
+                    {
+                        new Dependent { Id = 6, FirstName = "Spouse", LastName = "Durant", EmployeeId = 5, DateOfBirth = new DateTime(1988, 1, 2), Relationship = Relationship.Spouse }
                     }
                 }
             };

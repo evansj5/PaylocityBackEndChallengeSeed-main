@@ -1,5 +1,6 @@
 using Api.Data;
 using Api.Services;
+using Api.Services.PaycheckCalculators;
 using Api.Validation;
 using Microsoft.OpenApi.Models;
 
@@ -15,6 +16,12 @@ builder.Services.AddScoped<IDependentService, DependentService>();
 
 // validators
 builder.Services.AddScoped<IEmployeeValidator, EmployeeValidator>();
+builder.Services.AddScoped<IDependentValidator, DependentValidator>();
+builder.Services.AddScoped<IPaycheckCalculator, PaycheckCalculator>();
+builder.Services.AddScoped<IDependentsBenefitsCalculator, DependentsBenefitsCalculator>();
+builder.Services.AddScoped<IAgeBasedBenefitsCalculator, AgeBasedBenefitsCalculator>();
+builder.Services.AddScoped<IPaycheckConversionHelper, PaycheckConversionHelper>();
+builder.Services.AddScoped<ISalaryBasedBenefitsCalculator, SalaryBasedBenefitsCalculator>();
 
 var configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

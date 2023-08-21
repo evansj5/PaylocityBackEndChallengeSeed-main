@@ -1,9 +1,12 @@
 using System;
 using System.Net.Http;
+using System.Threading.Tasks;
+using Xunit;
+
 
 namespace ApiTests;
 
-public class IntegrationTest : IDisposable
+public class IntegrationTest : IAsyncLifetime
 {
     private HttpClient? _httpClient;
 
@@ -25,7 +28,16 @@ public class IntegrationTest : IDisposable
         }
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Resetting the database between runs, ideally this would be handled a different way
+    /// </summary>
+    /// <returns></returns>
+    public async Task InitializeAsync()
+    {
+        await HttpClient.GetAsync("/api/v1/test");
+    }
+
+    public async Task DisposeAsync()
     {
         HttpClient.Dispose();
     }

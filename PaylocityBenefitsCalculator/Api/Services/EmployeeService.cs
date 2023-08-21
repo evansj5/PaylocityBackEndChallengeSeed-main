@@ -2,31 +2,57 @@ using Api.Data;
 using Api.Dtos.Dependent;
 using Api.Dtos.Employee;
 using Api.Models;
+using Api.Services.PaycheckCalculators;
 using Api.Validation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace Api.Services
 {
     public interface IEmployeeService
     {
+        /// <summary>
+        /// Get all employees
+        /// </summary>
+        /// <returns>List of GetEmployeeDto objects</returns>
         List<GetEmployeeDto> GetAll();
+
+        /// <summary>
+        /// Get employee by id
+        /// </summary>
+        /// <param name="id">Id of the employee to get</param>
+        /// <returns>The employee, or null if they dont exist</returns>
         GetEmployeeDto Get(int id);
+
+        /// <summary>
+        /// Calculates and returns the employees paycheck
+        /// </summary>
+        /// <param name="employeeId">Id of the employee</param>
+        /// <returns>A GetPaycheckDto object</returns>
         GetPaycheckDto GetPaycheck(int employeeId);
+
+        /// <summary>
+        /// Creates an employee
+        /// </summary>
+        /// <param name="employee"><see cref="CreateEmployeeDto"/> employee to create</param>
+        /// <returns><see cref="GetEmployeeDto"/> of the created employee</returns>
         GetEmployeeDto Create(CreateEmployeeDto employee);
     }
 
     public class EmployeeService : IEmployeeService
     {
         private readonly BenefitsDbContext _context;
-        private readonly IOptions<BenefitsCostSettings> _benefitsCostSettings;
         private readonly IEmployeeValidator _employeeValidator;
+        private readonly IPaycheckCalculator _paycheckCalculator;
 
-        public EmployeeService(BenefitsDbContext context, IOptions<BenefitsCostSettings> benefitsCostSettings, IEmployeeValidator employeeValidator)
+        public EmployeeService(
+            BenefitsDbContext context, 
+            IEmployeeValidator employeeValidator, 
+            IPaycheckCalculator paycheckCalculator
+            )
         {
             _context = context;
-            _benefitsCostSettings = benefitsCostSettings;
             _employeeValidator = employeeValidator;
+            _paycheckCalculator = paycheckCalculator;
         }
 
         public List<GetEmployeeDto> GetAll()
@@ -49,72 +75,8 @@ namespace Api.Services
         }
 
         public GetPaycheckDto GetPaycheck(int employeeId) {
-
-            /**
-                *Completely* unsure how fractional cents should be handled in these types of systems. I am going to just lop off the fractional cents.
-                I assume in a real HR system there would be some logic that trues that up throughout the year.
-            **/
             var employee = Get(employeeId);
-            var grossPay = FloorToNearestCent(ConvertYearlyAmountToPaycheckAmount(employee.Salary));
-            var benefitsCosts = FloorToNearestCent(ConvertMonthlyAmountToPaycheckAmount(_benefitsCostSettings.Value.EmployeeCostPerMonth));
-            var dependentCosts = FloorToNearestCent(employee.Dependents
-                .Sum(CalculatePaycheckDependentCost));
-
-            var age = CalculateAge(employee.DateOfBirth);
-            decimal ageBasedCosts = 0;
-
-            if (age > _benefitsCostSettings.Value.AgeBasedCosts?.AgeThreshold)
-            {
-                ageBasedCosts = FloorToNearestCent(ConvertMonthlyAmountToPaycheckAmount(_benefitsCostSettings.Value.AgeBasedCosts?.AdditionalMonthlyCost ?? 0));
-            }
-
-            decimal salaryBasedCosts = 0;
-
-            if (employee.Salary > _benefitsCostSettings.Value.SalaryBasedCosts?.SalaryThreshold)
-            {
-                var yearlyCost = (_benefitsCostSettings.Value.SalaryBasedCosts?.AdditionalYearlyCostPercent ?? 0) * employee.Salary;
-                salaryBasedCosts = FloorToNearestCent(ConvertYearlyAmountToPaycheckAmount(yearlyCost));
-            }
-
-            return new GetPaycheckDto
-            {
-                GrossPay = grossPay,
-                DependentsBenefitsCosts = dependentCosts,
-                BaseBenefitsCosts = benefitsCosts,
-                SalaryBenefitsCosts = salaryBasedCosts,
-                AgeBasedBenefitsCosts = ageBasedCosts,
-                NetPay = grossPay - benefitsCosts - dependentCosts - salaryBasedCosts - ageBasedCosts
-            };
-        }
-
-        private decimal CalculatePaycheckDependentCost(GetDependentDto dependent)
-        {
-            var age = CalculateAge(dependent.DateOfBirth);
-            var cost = _benefitsCostSettings.Value.DependentCostPerMonth;
-            if (age > _benefitsCostSettings.Value.AgeBasedCosts?.DependentAgeThreshold)
-            {
-                cost += _benefitsCostSettings.Value.AgeBasedCosts?.DependentAdditionalMonthlyCost ?? 0;
-            }
-            return ConvertMonthlyAmountToPaycheckAmount(cost);
-        }
-
-        private decimal ConvertMonthlyAmountToPaycheckAmount(decimal monthlyAmount)
-        {
-            return monthlyAmount * 12 / _benefitsCostSettings.Value.PaychecksPerYear;
-        }
-
-        private decimal ConvertYearlyAmountToPaycheckAmount(decimal yearlyAmount)
-        {
-            return yearlyAmount / _benefitsCostSettings.Value.PaychecksPerYear;
-        }
-
-        private int CalculateAge(DateTime dateOfBirth)
-        {
-            var today = DateTime.Today;
-            var age = today.Year - dateOfBirth.Year;
-            if (dateOfBirth.Date > today.AddYears(-age)) age--;
-
-            return age;
+            return _paycheckCalculator.CalculatePaycheck(employee);
         }
 
         private GetEmployeeDto MapToDto(Employee employee)
@@ -136,11 +98,6 @@ namespace Api.Services
                 }).ToList()
             };
         }
-
-        private decimal FloorToNearestCent(decimal value) 
-        {
-            return Math.Floor(value * 100) / 100;
-        }
     
         public GetEmployeeDto Create(CreateEmployeeDto employee)
         {
@@ -149,12 +106,14 @@ namespace Api.Services
 
             if (!validationResult.IsValid)
             {
-                throw new ValidationException(validationResult.ErrorMessage);
+                throw new ValidationException(validationResult.ErrorMessage ?? "Invalid employee");
             }
+
+            var id = _context.Employees.Max(e => e.Id) + 1; // bit of a hack to get an auto-increment, generally the db would handle this
             
             var newEmployee = new Employee
             {
-                Id = _context.Employees.Max(e => e.Id) + 1, // bit of a hack to get an auto-increment, generally the db would handle this
+                Id = id, 
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
                 Salary = employee.Salary,
@@ -165,7 +124,8 @@ namespace Api.Services
                     FirstName = d.FirstName,
                     LastName = d.LastName,
                     Relationship = d.Relationship,
-                    DateOfBirth = d.DateOfBirth
+                    DateOfBirth = d.DateOfBirth,
+                    EmployeeId = id
                 }).ToList()
             };
 

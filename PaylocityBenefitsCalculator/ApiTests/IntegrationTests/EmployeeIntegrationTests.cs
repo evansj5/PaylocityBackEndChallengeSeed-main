@@ -81,25 +81,44 @@ public class EmployeeIntegrationTests : IntegrationTest
                     }
                 }
             },
-                new () 
-                { 
-                    Id = 4, 
-                    FirstName = "Larry", 
-                    LastName = "Bird", 
-                    Salary = 1413211.12m, 
-                    DateOfBirth = new DateTime(1956, 12, 7),
-                    Dependents = new List<GetDependentDto>
-                    {
-                        new () 
-                        { 
-                            Id = 5, 
-                            FirstName = "Spouse", 
-                            LastName = "Bird", 
-                            DateOfBirth = new DateTime(1956, 1, 2), 
-                            Relationship = Relationship.Spouse 
-                        }
+            new () 
+            { 
+                Id = 4, 
+                FirstName = "Larry", 
+                LastName = "Bird", 
+                Salary = 1413211.12m, 
+                DateOfBirth = new DateTime(1956, 12, 7),
+                Dependents = new List<GetDependentDto>
+                {
+                    new () 
+                    { 
+                        Id = 5, 
+                        FirstName = "Spouse", 
+                        LastName = "Bird", 
+                        DateOfBirth = new DateTime(1956, 1, 2), 
+                        Relationship = Relationship.Spouse 
                     }
                 }
+            },
+            new () 
+            { 
+                Id = 5, 
+                FirstName = "Kevin", 
+                LastName = "Durant", 
+                Salary = 1413211.12m, 
+                DateOfBirth = new DateTime(1988, 9, 29),
+                Dependents = new List<GetDependentDto>
+                {
+                    new () 
+                    { 
+                        Id = 6, 
+                        FirstName = "Spouse", 
+                        LastName = "Durant", 
+                        DateOfBirth = new DateTime(1988, 1, 2), 
+                        Relationship = Relationship.Spouse 
+                    }
+                }
+            }
         };
         await response.ShouldReturn(HttpStatusCode.OK, employees);
     }

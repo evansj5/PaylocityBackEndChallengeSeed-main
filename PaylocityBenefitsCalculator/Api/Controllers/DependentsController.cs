@@ -2,6 +2,7 @@
 using Api.Dtos.Dependent;
 using Api.Models;
 using Api.Services;
+using Api.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -54,5 +55,34 @@ public class DependentsController : ControllerBase
         };
 
         return StatusCode((int)HttpStatusCode.OK, result);
+    }
+
+    [SwaggerOperation(Summary = "Create a dependent")]
+    [HttpPost("")]
+    public async Task<ActionResult<ApiResponse<GetDependentDto>>> Create(CreateDependentDto dependent)
+    {
+        GetDependentDto createdDependent;
+
+        try
+        {
+            createdDependent = _dependentService.Create(dependent);
+        }
+        catch (ValidationException e)
+        {            
+            return StatusCode((int)HttpStatusCode.BadRequest, new ApiResponse<GetDependentDto>
+            {
+                Success = false,
+                Error = e.Message
+            });
+        }
+
+
+        var result = new ApiResponse<GetDependentDto>
+        {
+            Data = createdDependent,
+            Success = true
+        };
+        
+        return StatusCode((int)HttpStatusCode.Created, result);
     }
 }
